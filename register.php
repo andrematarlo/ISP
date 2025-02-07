@@ -37,15 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute();
                 $user_id = $conn->insert_id;
 
-                // Create customer profile
-                $sql = "INSERT INTO customers (user_id, full_name, phone, address) VALUES (?, ?, ?, ?)";
+                // Create customer profile with email
+                $sql = "INSERT INTO customers (user_id, full_name, email, phone, address) VALUES (?, ?, ?, ?, ?)";
                 $stmt = $conn->prepare($sql);
-                $stmt->bind_param("isss", $user_id, $full_name, $phone, $address);
+                $stmt->bind_param("issss", $user_id, $full_name, $email, $phone, $address);
                 $stmt->execute();
 
                 $conn->commit();
-                $_SESSION['success'] = "Registration successful! Please login.";
-                header('Location: login.php');
+                $_SESSION['success'] = "Registration successful! You can now login with your credentials.";
+                
+                // Show temporary success message before redirect
+                echo '<div class="alert alert-success text-center position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050;">
+                        Registration successful! Redirecting to login page...
+                      </div>';
+                
+                // Redirect after a short delay
+                echo '<script>
+                        setTimeout(function() {
+                            window.location.href = "login.php";
+                        }, 2000);
+                      </script>';
                 exit();
             } catch (Exception $e) {
                 $conn->rollback();
@@ -99,13 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-register:hover {
             background: #0056b3;
         }
-        .login-link {
-            color: #007bff;
-            text-decoration: none;
-        }
-        .login-link:hover {
-            color: #0056b3;
-            text-decoration: underline;
+        .alert {
+            margin-bottom: 1rem;
         }
     </style>
 </head>
@@ -115,81 +121,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-md-6">
                 <div class="card register-card">
                     <div class="register-header">
-                        <img src="assets/images/logo.png" alt="JoJeTech Solutions" class="company-logo">
-                        <h3 class="mb-0">Create Account</h3>
+                        <img src="assets/images/logo.png" alt="JoJeTech Solutions Logo" class="company-logo">
+                        <h4 class="mb-0">Create Your Account</h4>
                     </div>
                     <div class="card-body p-4">
                         <?php if (isset($error)): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                <?php echo $error; ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?php echo $error; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="register.php" class="needs-validation" novalidate>
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="username" class="form-label">
-                                        <i class="fas fa-user me-2"></i>Username
-                                    </label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
+                        <form method="POST" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                                <div class="invalid-feedback">Please choose a username.</div>
+                            </div>
 
-                                <div class="col-md-12 mb-3">
-                                    <label for="full_name" class="form-label">
-                                        <i class="fas fa-user me-2"></i>Full Name
-                                    </label>
-                                    <input type="text" class="form-control" id="full_name" name="full_name" required>
-                                </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
 
-                                <div class="col-md-12 mb-3">
-                                    <label for="email" class="form-label">
-                                        <i class="fas fa-envelope me-2"></i>Email Address
-                                    </label>
-                                    <input type="email" class="form-control" id="email" name="email" required>
-                                </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <div class="invalid-feedback">Please enter a password.</div>
+                            </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label for="password" class="form-label">
-                                        <i class="fas fa-lock me-2"></i>Password
-                                    </label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                <div class="invalid-feedback">Passwords do not match.</div>
+                            </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label for="confirm_password" class="form-label">
-                                        <i class="fas fa-lock me-2"></i>Confirm Password
-                                    </label>
-                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                                </div>
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" required>
+                                <div class="invalid-feedback">Please enter your full name.</div>
+                            </div>
 
-                                <div class="col-md-12 mb-3">
-                                    <label for="phone" class="form-label">
-                                        <i class="fas fa-phone me-2"></i>Phone Number
-                                    </label>
-                                    <input type="tel" class="form-control" id="phone" name="phone" required>
-                                </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                                <div class="invalid-feedback">Please enter your phone number.</div>
+                            </div>
 
-                                <div class="col-md-12 mb-4">
-                                    <label for="address" class="form-label">
-                                        <i class="fas fa-map-marker-alt me-2"></i>Address
-                                    </label>
-                                    <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
-                                </div>
+                            <div class="mb-4">
+                                <label for="address" class="form-label">Address</label>
+                                <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                                <div class="invalid-feedback">Please enter your address.</div>
                             </div>
 
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-register">
-                                    <i class="fas fa-user-plus me-2"></i>Register
-                                </button>
+                                <button type="submit" class="btn btn-primary btn-register">Register</button>
                             </div>
                         </form>
 
-                        <div class="text-center mt-4">
-                            <p class="mb-0">Already have an account? 
-                                <a href="login.php" class="login-link">Login here</a>
-                            </p>
+                        <div class="text-center mt-3">
+                            <p class="mb-0">Already have an account? <a href="login.php" class="text-primary">Login here</a></p>
                         </div>
                     </div>
                 </div>
@@ -211,10 +203,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             event.preventDefault()
                             event.stopPropagation()
                         }
+
+                        // Custom password match validation
+                        var password = form.querySelector('#password')
+                        var confirm_password = form.querySelector('#confirm_password')
+                        if (password.value !== confirm_password.value) {
+                            confirm_password.setCustomValidity('Passwords do not match')
+                            event.preventDefault()
+                            event.stopPropagation()
+                        } else {
+                            confirm_password.setCustomValidity('')
+                        }
+
                         form.classList.add('was-validated')
                     }, false)
                 })
         })()
+
+        // Auto-dismiss alerts after 5 seconds
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const alerts = document.querySelectorAll('.alert:not(.position-fixed)');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
+
+        // Password match validation on input
+        document.getElementById('confirm_password').addEventListener('input', function(e) {
+            if (this.value !== document.getElementById('password').value) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
     </script>
 </body>
 </html>

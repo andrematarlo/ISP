@@ -3,8 +3,15 @@ session_start();
 require_once 'config/database.php';
 
 $error = '';
+$success = '';
 $logout_success = '';
 $password_changed = '';
+
+// Check for registration success message
+if (isset($_SESSION['success'])) {
+    $success = $_SESSION['success'];
+    unset($_SESSION['success']);
+}
 
 // Check for logout success message
 if (isset($_SESSION['logout_success'])) {
@@ -108,34 +115,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <h3 class="mb-0">Welcome Back!</h3>
                     </div>
                     <div class="card-body p-4">
-                        <?php if($logout_success): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <?php echo htmlspecialchars($logout_success); ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if($password_changed): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                <?php echo htmlspecialchars($password_changed); ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
-
                         <?php if ($error): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                <?php echo $error; ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?php echo $error; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="login.php">
+                        <?php if ($success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?php echo $success; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if ($logout_success): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?php echo $logout_success; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if ($password_changed): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?php echo $password_changed; ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php endif; ?>
+
+                        <form method="POST" action="login.php" class="needs-validation" novalidate>
                             <div class="mb-3">
                                 <label for="username" class="form-label">
                                     <i class="fas fa-user me-2"></i>Username
                                 </label>
                                 <input type="text" class="form-control" id="username" name="username" required>
+                                <div class="invalid-feedback">Please enter a username.</div>
                             </div>
 
                             <div class="mb-4">
@@ -143,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <i class="fas fa-lock me-2"></i>Password
                                 </label>
                                 <input type="password" class="form-control" id="password" name="password" required>
+                                <div class="invalid-feedback">Please enter a password.</div>
                             </div>
 
                             <div class="d-grid">
@@ -165,5 +180,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Form validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+
+        // Auto-dismiss alerts after 5 seconds
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
+    </script>
 </body>
 </html>

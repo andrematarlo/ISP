@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config/database.php';
+require_once '../includes/mail_helper.php';
 $success = $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -8,8 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->begin_transaction();
 
     try {
-        // Get all active subscriptions
-        $sql = "SELECT s.*, p.price, c.full_name 
+        // Get all active subscriptions with customer email
+        $sql = "SELECT s.*, p.price, c.full_name, c.email 
                 FROM subscriptions s 
                 JOIN plans p ON s.plan_id = p.id 
                 JOIN customers c ON s.customer_id = c.id 
@@ -18,11 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $bills_generated = 0;
         $total_amount = 0;
+        $emails_sent = 0;
+        $email_errors = [];
 
         // Get the billing month (current month by default)
         $billing_month = isset($_POST['billing_month']) ? $_POST['billing_month'] : date('Y-m');
         $bill_date = $billing_month . '-01';
-        $due_date = date('Y-m-d', strtotime($bill_date . ' +15 days')); // Due after 15 days
+        
+        // Get due date from settings
+        $due_days_sql = "SELECT setting_value FROM settings WHERE setting_key = 'due_date_days'";
+        $due_days_result = $conn->query($due_days_sql);
+        $due_days = $due_days_result->fetch_assoc()['setting_value'] ?? '15';
+        $due_date = date('Y-m-d', strtotime($bill_date . " +{$due_days} days"));
 
         // Check if bills already exist for this month
         $check_sql = "SELECT COUNT(*) as count FROM bills WHERE DATE_FORMAT(bill_date, '%Y-%m') = ?";
@@ -52,13 +60,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $bills_generated++;
                 $total_amount += $subscription['price'];
+                
+                // Send email notification if customer has an email
+                if (!empty($subscription['email'])) {
+                    try {
+                        if (sendBillEmail(
+                            $subscription['email'],
+                            $subscription['full_name'],
+                            $subscription['price'],
+                            $due_date,
+                            $billing_month
+                        )) {
+                            $emails_sent++;
+                        } else {
+                            $email_errors[] = "Failed to send email to {$subscription['full_name']} ({$subscription['email']})";
+                        }
+                    } catch (Exception $e) {
+                        $email_errors[] = "Error sending email to {$subscription['full_name']}: " . $e->getMessage();
+                    }
+                }
             }
         }
 
         if ($bills_generated > 0) {
             $conn->commit();
-            $_SESSION['success'] = "Successfully generated {$bills_generated} bills for {$billing_month} 
-                                  totaling ₱" . number_format($total_amount, 2);
+            $message = "Successfully generated {$bills_generated} bills for {$billing_month} 
+                       totaling ₱" . number_format($total_amount, 2);
+            
+            if ($emails_sent > 0) {
+                $message .= ". {$emails_sent} email notifications sent";
+            }
+            
+            if (!empty($email_errors)) {
+                $message .= ". Some emails failed to send. Check the error log for details.";
+                foreach ($email_errors as $error) {
+                    error_log($error);
+                }
+            }
+            
+            $_SESSION['success'] = $message;
         } else {
             throw new Exception("No active subscriptions found to generate bills.");
         }
@@ -80,6 +120,7 @@ $months_sql = "SELECT DISTINCT DATE_FORMAT(bill_date, '%Y-%m') as month
                ORDER BY month DESC";
 $months_with_bills = $conn->query($months_sql)->fetch_all(MYSQLI_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
