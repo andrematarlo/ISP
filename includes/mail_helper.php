@@ -42,8 +42,8 @@ function sendBillEmail($to_email, $customer_name, $bill_amount, $due_date, $bill
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = $settings['smtp_username'] ?? 'your-email@gmail.com';
-        $mail->Password = $settings['smtp_password'] ?? 'your-app-password';
+        $mail->Username = $settings['smtp_username'] ?? 'tamarloandre@gmail.com';
+        $mail->Password = $settings['smtp_password'] ?? 'cpyd vvxy rghj jcny';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 

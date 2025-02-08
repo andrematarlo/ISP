@@ -1,7 +1,7 @@
 INSERT INTO settings (setting_key, setting_value) VALUES
 ('company_name', 'JoJeTech Solutions'),
 ('company_address', 'Consolacion,Dalaguete,Cebu'),
-('company_phone', '+1234567890'),
+('company_phone', '+639195700051'),
 ('company_email', 'tamarloandre@gmail.com'),
 ('due_date_days', '15'),
 ('late_fee_percentage', '5'),

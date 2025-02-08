@@ -40,6 +40,7 @@ $stats_sql = "SELECT
     SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
     SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved,
     SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed,
+    SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent_count,
     SUM(CASE WHEN priority = 'high' THEN 1 ELSE 0 END) as high_count,
     SUM(CASE WHEN priority = 'medium' THEN 1 ELSE 0 END) as medium_count,
     SUM(CASE WHEN priority = 'low' THEN 1 ELSE 0 END) as low_count
@@ -55,6 +56,7 @@ $ticket_stats = [
     'in_progress_tickets' => $stats['in_progress'],
     'resolved_tickets' => $stats['resolved'],
     'closed_tickets' => $stats['closed'],
+    'urgent_priority' => $stats['urgent_count'],
     'high_priority' => $stats['high_count'],
     'medium_priority' => $stats['medium_count'],
     'low_priority' => $stats['low_count']
@@ -162,8 +164,9 @@ require_once '../includes/admin_header.php';
                                 <td><?php echo htmlspecialchars($ticket['subject']); ?></td>
                                 <td>
                                     <span class="badge bg-<?php 
-                                        echo $ticket['priority'] === 'high' ? 'danger' : 
-                                            ($ticket['priority'] === 'medium' ? 'warning' : 'info'); 
+                                        echo $ticket['priority'] === 'urgent' ? 'danger' : 
+                                            ($ticket['priority'] === 'high' ? 'warning' : 
+                                            ($ticket['priority'] === 'medium' ? 'info' : 'secondary')); 
                                     ?>">
                                         <?php echo ucfirst($ticket['priority']); ?>
                                     </span>

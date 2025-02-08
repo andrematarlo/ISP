@@ -134,9 +134,9 @@ if ($bill['status'] === 'paid') {
         <div class="bill-header">
             <img src="../assets/images/logo.png" alt="ISP Logo" class="mb-2">
             <h2>INTERNET SERVICE PROVIDER</h2>
-            <p>123 Main Street, City, Country<br>
-               Phone: (123) 456-7890<br>
-               Email: billing@ispprovider.com</p>
+            <p>Suba,Poblacion,Argaoy<br>
+               Phone: 09195700051<br>
+               Email: tamarloandre@gmail.com</p>
         </div>
 
         <div class="row bill-info">

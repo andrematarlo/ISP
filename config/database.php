@@ -21,7 +21,7 @@ if ($is_production) {
     define('DB_HOST', 'localhost');
     define('DB_USER', 'root');
     define('DB_PASS', '');
-    define('DB_NAME', 'isp_db');
+    define('DB_NAME', 'isp_database');
 }
 
 if (!$is_production) {

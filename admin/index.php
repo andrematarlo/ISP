@@ -162,7 +162,7 @@ require_once '../includes/admin_header.php';
                                 <td><?php echo date('M j, Y g:i A', strtotime($activity['created_at'])); ?></td>
                                 <td>
                                     <a href="<?php 
-                                        echo $activity['type'] === 'subscription' ? 'view_subscription.php' :
+                                        echo $activity['type'] === 'subscription' ? 'view_customer.php' :
                                             ($activity['type'] === 'bill' ? 'view_bill.php' : 'view_ticket.php');
                                     ?>?id=<?php echo $activity['id']; ?>" 
                                        class="btn btn-sm btn-primary">

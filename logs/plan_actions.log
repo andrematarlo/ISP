@@ -9,3 +9,9 @@ PLAN_ACTION: PlanID=3, Action=add, Success=YES, Error=, AdminID=1, Timestamp=202
 PLAN_ACTION: PlanID=4, Action=add, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 02:18:45
 PLAN_ACTION: PlanID=3, Action=update, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 02:23:01
 PLAN_ACTION: PlanID=4, Action=update, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 02:23:07
+PLAN_ACTION: PlanID=1, Action=add, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 12:51:05
+PLAN_ACTION: PlanID=1, Action=add, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 14:22:41
+PLAN_ACTION: PlanID=1, Action=update, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 14:40:04
+PLAN_ACTION: PlanID=1, Action=update, Success=YES, Error=, AdminID=1, Timestamp=2025-02-07 14:40:13
+PLAN_ACTION: PlanID=1, Action=change_status, Success=YES, Error=Status changed to inactive, AdminID=1, Timestamp=2025-02-08 03:03:11
+PLAN_ACTION: PlanID=1, Action=change_status, Success=YES, Error=Status changed to active, AdminID=1, Timestamp=2025-02-08 03:03:17

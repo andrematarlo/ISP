@@ -76,7 +76,7 @@ $sql = "SELECT c.*, u.email, u.username,
                SUM(CASE WHEN b.status = 'unpaid' THEN 1 ELSE 0 END) as unpaid_bills
         FROM customers c
         JOIN users u ON c.user_id = u.id
-        LEFT JOIN subscriptions s ON c.id = s.customer_id AND s.status = 'active'
+        LEFT JOIN subscriptions s ON c.id = s.customer_id
         LEFT JOIN bills b ON s.id = b.subscription_id
         GROUP BY c.id
         ORDER BY c.created_at DESC";
@@ -179,11 +179,11 @@ require_once '../includes/admin_header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <?php if ($customer['subscription_id']): ?>
+                                    <?php if ($customer['subscription_id'] && $customer['subscription_status'] === 'active'): ?>
                                         <button type="button" 
                                                 class="btn btn-sm btn-danger cancel-subscription"
                                                 data-id="<?php echo $customer['subscription_id']; ?>">
-                                            <i class="fas fa-trash-alt"></i>
+                                            <i class="fas fa-trash-alt"></i> Cancel
                                         </button>
                                     <?php else: ?>
                                         <span class="text-muted">No Active Subscription</span>
@@ -438,23 +438,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Handle subscription cancellation
-            $('.cancel-subscription').click(function() {
+            $('.cancel-subscription').click(function(e) {
+                e.preventDefault();
+                console.log('Cancel subscription button clicked');
+                
                 const subscriptionId = $(this).data('id');
+                console.log('Subscription ID:', subscriptionId);
                 
                 // Check if subscription ID is valid
                 if (!subscriptionId) {
+                    console.error('No subscription ID found');
                     alert('No active subscription found for this customer.');
                     return;
                 }
 
-                // Show confirmation modal
-                $('#cancelSubscriptionModal').modal('show');
-                
-                // Unbind previous click events to prevent multiple bindings
-                $('#cancel-subscription-btn').off('click').on('click', function() {
-                    // Disable button to prevent multiple submissions
-                    $(this).prop('disabled', true).html('Cancelling...');
-
+                // Show confirmation dialog first
+                if (confirm('Are you sure you want to cancel this subscription? This action cannot be undone.')) {
+                    console.log('User confirmed cancellation');
+                    
+                    // Send AJAX request
                     $.ajax({
                         url: 'cancel_subscription.php',
                         method: 'POST',
@@ -463,31 +465,39 @@ document.addEventListener('DOMContentLoaded', function() {
                             subscription_id: subscriptionId,
                             cancel_reason: 'Admin Cancellation'
                         },
+                        beforeSend: function() {
+                            console.log('Sending cancellation request...');
+                        },
                         success: function(response) {
+                            console.log('Server response:', response);
                             if (response.success) {
                                 alert('Subscription successfully cancelled.');
                                 location.reload();
                             } else {
+                                console.error('Server returned error:', response.message);
                                 alert('Error: ' + response.message);
-                                $('#cancel-subscription-btn').prop('disabled', false).html('Cancel Subscription');
                             }
                         },
                         error: function(xhr, status, error) {
-                            console.error('Subscription cancellation error:', error);
+                            console.error('AJAX Error:', {
+                                status: status,
+                                error: error,
+                                response: xhr.responseText
+                            });
                             
                             let errorMessage = 'An unexpected error occurred';
                             try {
                                 const response = JSON.parse(xhr.responseText);
                                 errorMessage = response.message || errorMessage;
                             } catch (e) {
+                                console.error('Error parsing response:', e);
                                 errorMessage = xhr.responseText || errorMessage;
                             }
 
                             alert('Error cancelling subscription: ' + errorMessage);
-                            $('#cancel-subscription-btn').prop('disabled', false).html('Cancel Subscription');
                         }
                     });
-                });
+                }
             });
         });
     }

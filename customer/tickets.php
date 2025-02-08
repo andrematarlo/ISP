@@ -131,11 +131,31 @@ require_once '../includes/customer_header.php';
                                 <td><?php echo $ticket['id']; ?></td>
                                 <td><?php echo htmlspecialchars($ticket['subject']); ?></td>
                                 <td>
-                                    <span class="badge bg-<?php 
-                                        echo $ticket['priority'] === 'high' ? 'danger' : 
-                                            ($ticket['priority'] === 'medium' ? 'warning' : 'info'); 
-                                    ?>">
-                                        <?php echo ucfirst($ticket['priority']); ?>
+                                    <?php 
+                                        $priority = strtolower(trim($ticket['priority']));
+                                        $badge_class = '';
+                                        $display_priority = '';
+                                        
+                                        switch ($priority) {
+                                            case 'urgent':
+                                                $badge_class = 'danger';
+                                                $display_priority = 'Urgent';
+                                                break;
+                                            case 'high':
+                                                $badge_class = 'warning';
+                                                $display_priority = 'High';
+                                                break;
+                                            case 'medium':
+                                                $badge_class = 'info';
+                                                $display_priority = 'Medium';
+                                                break;
+                                            default:
+                                                $badge_class = 'secondary';
+                                                $display_priority = 'Low';
+                                        }
+                                    ?>
+                                    <span class="badge bg-<?php echo $badge_class; ?>">
+                                        <?php echo $display_priority; ?>
                                     </span>
                                 </td>
                                 <td>
