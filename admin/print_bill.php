@@ -134,7 +134,7 @@ if ($bill['status'] === 'paid') {
         <div class="bill-header">
             <img src="../assets/images/jojetechlogo.png" alt="ISP Logo" class="mb-2">
             <h2>INTERNET SERVICE PROVIDER</h2>
-            <p>Suba,Poblacion,Argaoy<br>
+            <p>Suba,Poblacion,Argao<br>
                Phone: 09195700051<br>
                Email: tamarloandre@gmail.com</p>
         </div>
@@ -185,13 +185,13 @@ if ($bill['status'] === 'paid') {
             </table>
         </div>
 
-        <?php if ($bill['status'] === 'paid'): ?>
+        <?php if ($bill['status'] === 'paid' && $payment): ?>
         <div class="payment-info bg-success text-white">
             <h5><i class="fas fa-check-circle"></i> Payment Received</h5>
             <p class="mb-0">
-                Paid on: <?php echo date('F j, Y g:i A', strtotime($payment['payment_date'])); ?><br>
-                Method: <?php echo ucfirst($payment['payment_method']); ?><br>
-                Reference: <?php echo htmlspecialchars($payment['reference_number']); ?>
+                Paid on: <?php echo isset($payment['payment_date']) ? date('F j, Y g:i A', strtotime($payment['payment_date'])) : 'N/A'; ?><br>
+                Method: <?php echo isset($payment['payment_method']) ? ucfirst($payment['payment_method']) : 'N/A'; ?><br>
+                Reference: <?php echo isset($payment['reference_number']) ? htmlspecialchars($payment['reference_number']) : 'N/A'; ?>
             </p>
         </div>
         <?php else: ?>
