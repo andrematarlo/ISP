@@ -69,16 +69,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_customer'])) {
 }
 
 // Get all customers with their subscription details
-$sql = "SELECT c.*, u.email, u.username,
-               s.id as subscription_id, s.status as subscription_status,
-               COUNT(DISTINCT s.id) as total_subscriptions,
-               SUM(CASE WHEN s.status = 'active' THEN 1 ELSE 0 END) as active_subscriptions,
-               SUM(CASE WHEN b.status = 'unpaid' THEN 1 ELSE 0 END) as unpaid_bills
+$sql = "SELECT 
+            c.*,
+            u.email,
+            u.username,
+            GROUP_CONCAT(DISTINCT s.id) as subscription_ids,
+            GROUP_CONCAT(DISTINCT s.status) as subscription_statuses,
+            COUNT(DISTINCT s.id) as total_subscriptions,
+            SUM(CASE WHEN s.status = 'active' THEN 1 ELSE 0 END) as active_subscriptions,
+            SUM(CASE WHEN b.status = 'unpaid' THEN 1 ELSE 0 END) as unpaid_bills,
+            MAX(CASE WHEN s.status = 'active' THEN s.id ELSE NULL END) as active_subscription_id
         FROM customers c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN subscriptions s ON c.id = s.customer_id
         LEFT JOIN bills b ON s.id = b.subscription_id
-        GROUP BY c.id
+        GROUP BY c.id, u.email, u.username
         ORDER BY c.created_at DESC";
 $result = $conn->query($sql);
 
@@ -179,10 +184,10 @@ require_once '../includes/admin_header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <?php if ($customer['subscription_id'] && $customer['subscription_status'] === 'active'): ?>
+                                    <?php if ($customer['active_subscription_id']): ?>
                                         <button type="button" 
                                                 class="btn btn-sm btn-danger cancel-subscription"
-                                                data-id="<?php echo $customer['subscription_id']; ?>">
+                                                data-id="<?php echo $customer['active_subscription_id']; ?>">
                                             <i class="fas fa-trash-alt"></i> Cancel
                                         </button>
                                     <?php else: ?>

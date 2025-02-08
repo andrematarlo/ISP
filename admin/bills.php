@@ -1,51 +1,5 @@
 <?php
-function processPayment($conn, $payment_id, $bill_id, $action, $admin_notes = '') {
-    try {
-        $conn->begin_transaction();
-
-        // Retrieve payment details
-        $sql = "SELECT * FROM payments WHERE id = ? AND bill_id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ii', $payment_id, $bill_id);
-        $stmt->execute();
-        $payment = $stmt->get_result()->fetch_assoc();
-
-        if (!$payment) {
-            throw new Exception("Payment not found.");
-        }
-
-        // Update payment status
-        $new_status = $action === 'accept' ? 'completed' : 'failed';
-        $sql = "UPDATE payments SET 
-                status = ?, 
-                admin_notes = ?, 
-                processed_at = NOW() 
-                WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssi', $new_status, $admin_notes, $payment_id);
-        $stmt->execute();
-
-        // If payment is accepted, update bill status
-        if ($action === 'accept') {
-            // Update bill status to paid
-            $sql = "UPDATE bills SET 
-                    status = 'paid', 
-                    paid_at = NOW() 
-                    WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param('i', $bill_id);
-            $stmt->execute();
-        }
-
-        $conn->commit();
-        return true;
-    } catch (Exception $e) {
-        $conn->rollback();
-        error_log("Payment processing error: " . $e->getMessage());
-        return false;
-    }
-}
-
+ob_start(); // Start output buffering
 session_start();
 require_once '../config/database.php';
 
@@ -55,23 +9,49 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Handle bill status update
-if (isset($_POST['update_status'])) {
+// Handle bill payment
+if (isset($_POST['mark_as_paid']) && isset($_POST['bill_id'])) {
     $bill_id = (int)$_POST['bill_id'];
-    $new_status = $_POST['status'];
     
-    $sql = "UPDATE bills SET status = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('si', $new_status, $bill_id);
-    
-    if ($stmt->execute()) {
-        $_SESSION['success'] = "Bill status updated successfully!";
-    } else {
-        $_SESSION['error'] = "Error updating bill status.";
+    try {
+        // Start transaction
+        $conn->begin_transaction();
+        
+        // Update bill status
+        $sql = "UPDATE bills SET status = 'paid', paid_at = NOW() WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('i', $bill_id);
+        
+        if (!$stmt->execute()) {
+            throw new Exception("Failed to update bill status");
+        }
+        
+        // Log the action
+        $log_sql = "INSERT INTO activity_log (user_id, action, details) VALUES (?, 'mark_bill_paid', ?)";
+        $log_details = json_encode([
+            'bill_id' => $bill_id,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        
+        $log_stmt = $conn->prepare($log_sql);
+        $log_stmt->bind_param('is', $_SESSION['user_id'], $log_details);
+        $log_stmt->execute();
+        
+        $conn->commit();
+        $_SESSION['success'] = "Bill marked as paid successfully!";
+    } catch (Exception $e) {
+        $conn->rollback();
+        $_SESSION['error'] = "Error marking bill as paid: " . $e->getMessage();
     }
+    
+    // Clear output buffer before redirect
+    ob_end_clean();
     header('Location: bills.php');
     exit();
 }
+
+// Include header after handling form submission
+require_once '../includes/admin_header.php';
 
 // Get all bills with customer and subscription details
 $sql = "SELECT b.*, 
@@ -98,7 +78,6 @@ FROM bills";
 $stats_result = $conn->query($stats_sql);
 $stats = $stats_result->fetch_assoc();
 
-require_once '../includes/admin_header.php';
 ?>
 
 <main class="container">
@@ -113,6 +92,26 @@ require_once '../includes/admin_header.php';
             </a>
         </div>
     </div>
+
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?php 
+            echo $_SESSION['success'];
+            unset($_SESSION['success']);
+            ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php 
+            echo $_SESSION['error'];
+            unset($_SESSION['error']);
+            ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
@@ -210,11 +209,15 @@ require_once '../includes/admin_header.php';
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <?php if ($bill['status'] === 'unpaid'): ?>
-                                            <button type="button" 
-                                                    class="btn btn-sm btn-success mark-as-paid"
-                                                    data-id="<?php echo $bill['id']; ?>">
-                                                <i class="fas fa-check"></i>
-                                            </button>
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="bill_id" value="<?php echo $bill['id']; ?>">
+                                                <input type="hidden" name="mark_as_paid" value="1">
+                                                <button type="submit" 
+                                                        class="btn btn-sm btn-success"
+                                                        onclick="return confirm('Are you sure you want to mark this bill as paid?');">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
                                         <?php endif; ?>
                                         <a href="print_bill.php?id=<?php echo $bill['id']; ?>" 
                                            class="btn btn-sm btn-secondary" target="_blank">
@@ -231,42 +234,6 @@ require_once '../includes/admin_header.php';
     </div>
 </main>
 
-<!-- Mark as Paid Modal -->
-<div class="modal fade" id="markAsPaidModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Mark Bill as Paid</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="markAsPaidForm" action="process_payment.php" method="POST">
-                    <input type="hidden" name="bill_id" id="paid_bill_id">
-                    <div class="mb-3">
-                        <label for="payment_method" class="form-label">Payment Method</label>
-                        <select class="form-select" id="payment_method" name="payment_method" required>
-                            <option value="cash">Cash</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="gcash">GCash</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="payment_reference" class="form-label">Reference Number</label>
-                        <input type="text" class="form-control" id="payment_reference" name="payment_reference">
-                        <small class="text-muted">Required for Bank Transfer and GCash payments</small>
-                    </div>
-                    <div class="mb-3">
-                        <label for="payment_date" class="form-label">Payment Date</label>
-                        <input type="date" class="form-control" id="payment_date" name="payment_date" 
-                               value="<?php echo date('Y-m-d'); ?>" required>
-                    </div>
-                    <button type="submit" class="btn btn-success">Confirm Payment</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Add DataTables CSS -->
 <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
@@ -279,37 +246,6 @@ require_once '../includes/admin_header.php';
         // Initialize DataTable
         $('#billsTable').DataTable({
             order: [[5, 'asc']]  // Sort by due date
-        });
-
-        // Handle mark as paid button
-        $('.mark-as-paid').click(function() {
-            const billId = $(this).data('id');
-            $('#paid_bill_id').val(billId);
-            $('#markAsPaidModal').modal('show');
-        });
-
-        // Show/hide reference number field based on payment method
-        $('#payment_method').change(function() {
-            const method = $(this).val();
-            if (method === 'bank_transfer' || method === 'gcash') {
-                $('#payment_reference').prop('required', true);
-                $('#payment_reference').closest('.mb-3').show();
-            } else {
-                $('#payment_reference').prop('required', false);
-                $('#payment_reference').closest('.mb-3').hide();
-            }
-        });
-
-        // Handle payment form submission
-        $('#markAsPaidForm').submit(function(e) {
-            e.preventDefault();
-            $.post($(this).attr('action'), $(this).serialize())
-                .done(function() {
-                    location.reload();
-                })
-                .fail(function(response) {
-                    alert(response.responseText || 'Error processing payment');
-                });
         });
     });
 </script>

@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Start output buffering
 session_start();
 require_once '../config/database.php';
 require_once '../includes/admin_auth.php';
@@ -10,10 +11,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
     $admin_notes = filter_input(INPUT_POST, 'admin_notes', FILTER_SANITIZE_STRING);
 
     if ($request_id && in_array($action, ['approve', 'reject', 'schedule', 'more_info'])) {
-        // Begin transaction
-        $conn->begin_transaction();
-
         try {
+            // Begin transaction
+            $conn->begin_transaction();
+
             // Fetch request details first
             $request_stmt = $conn->prepare("SELECT * FROM upgrade_requests WHERE id = ?");
             $request_stmt->bind_param('i', $request_id);
@@ -123,10 +124,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
             $_SESSION['error'] = "Error processing request: " . $e->getMessage();
         }
 
+        // Clear output buffer before redirect
+        ob_end_clean();
         header('Location: upgrade_requests.php');
         exit();
     }
 }
+
+require_once '../includes/admin_header.php';
 
 // Fetch upgrade requests with customer and plan details
 $query = "SELECT ur.*, c.full_name AS customer_name, p.name AS plan_name, p.speed, p.price 
@@ -136,7 +141,6 @@ $query = "SELECT ur.*, c.full_name AS customer_name, p.name AS plan_name, p.spee
           ORDER BY ur.created_at DESC";
 $result = $conn->query($query);
 
-require_once '../includes/admin_header.php';
 ?>
 
 <div class="container-fluid py-4">

@@ -132,7 +132,7 @@ if ($bill['status'] === 'paid') {
 
         <!-- Bill Content -->
         <div class="bill-header">
-            <img src="../assets/images/logo.png" alt="ISP Logo" class="mb-2">
+            <img src="../assets/images/jojetechlogo.png" alt="ISP Logo" class="mb-2">
             <h2>INTERNET SERVICE PROVIDER</h2>
             <p>Suba,Poblacion,Argaoy<br>
                Phone: 09195700051<br>

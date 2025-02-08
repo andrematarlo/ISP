@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-md-5">
                 <div class="card login-card">
                     <div class="login-header">
-                        <img src="assets/images/gcashqr.jpg" alt="ISP Management System" class="company-logo">
+                        <img src="assets/images/jojetechlogo.png" alt="ISP Management System" class="company-logo">
                         <h3 class="mb-0">Welcome Back!</h3>
                     </div>
                     <div class="card-body p-4">
